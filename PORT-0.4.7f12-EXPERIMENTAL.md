@@ -46,9 +46,19 @@ port of every feature. The Mono build was not tested or retargeted.
   and cold/temperature indicators and survival mechanics worked. This is
   user-reported gameplay validation **of 1.0.2.47**, not a full regression test.
 - The 1.0.2.48 candidate builds, and `SaveFolderGuard` tests pass with fake
-  saves in a separate temporary sandbox. It has **not** been tested in-game.
+  saves in a separate temporary sandbox.
+- **Solo permadeath was tested in-game on 0.4.7f12 with 1.0.2.48** and
+  `PermanentDeath = true`. After the player died, the character did not
+  respawn and the active Steam-profile save was deleted; the user confirmed
+  it disappeared from the save list. A read-only check found that the active
+  profile had no `SaveGame_1`, while a different `TempPlayer/SaveGame_1` still
+  existed. A verified backup had been taken before the test. This is one
+  gameplay run, not proof of every death cause or save arrangement.
+- The player also observed bleeding after being shot. The bleed mechanic was
+  already present in Flatline; its pressure interaction and hospital cure
+  have **not** been validated in this game build.
 
-## Known blocker: permadeath candidate needs an in-game test
+## Earlier permadeath failure and remaining validation
 
 In the 1.0.2.47 test, the player did not respawn during the session, but the
 save **was not deleted**: after leaving, the user could load it again. The
@@ -60,15 +70,14 @@ System.NullReferenceException: Object reference not set to an instance of an obj
    at Flatline.FlatlineUIModule.GenerateDeathScreenScore()+MoveNext()
 ```
 
-The 1.0.2.48 changes address the likely null references and the old deletion
-coroutine's unreliable wait for `IsLoading == true`, but **compile tests cannot
-prove that the death screen, menu transition or Steam Cloud save deletion work**.
-Do not advertise it as fully compatible. Back up saves and keep
-`PermanentDeath = false` in `UserData/MelonPreferences.cfg` on existing profiles.
-For an actual deletion test, create a disposable *solo* save, confirm its
-backup, enable `PermanentDeath = true`, die, and verify that only that slot
-disappears both in-game and after restarting Steam. Test sleep, save/reload,
-death UI, multiplayer and clothing items separately.
+The 1.0.2.48 changes address likely null references and remove the old
+deletion coroutine's unreliable wait for `IsLoading == true`. The single
+solo death test above confirmed deletion of the active slot, but did **not**
+verify that Steam Cloud will not restore it after a Steam restart. Do not
+advertise this as fully compatible across all modes: back up existing saves,
+keep `PermanentDeath = false` on valuable profiles, and independently test
+other death causes, sleep, normal save/reload, multiplayer, Steam Cloud and
+clothing items. Automatic deletion is intentionally limited to solo play.
 
 ## Rebuild
 
