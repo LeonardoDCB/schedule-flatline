@@ -18,10 +18,18 @@ port of every feature. The Mono build was not tested or retargeted.
   is complete. Catch Flatline save-data exceptions without aborting the game's
   own save call.
 - Default `PermanentDeath` to `false` for a **new IL2CPP configuration** while
-  its death UI is broken. Existing saved preferences are not overwritten;
-  the Mono default remains unchanged.
+  its death flow is being validated. Existing saved preferences are not
+  overwritten; the Mono default remains unchanged.
+- Experimental solo death flow in 1.0.2.48: tolerate missing death-screen
+  title/score data, use the actual respawn button as the clone source, and
+  return to the menu automatically after a confirmed death even if the custom
+  button cannot be found. Only after the menu finishes loading, delete the
+  *active* save if its absolute path and slot match
+  `Saves/<profile>/SaveGame_<slot>`. Refuse unknown paths and symlinks; do not
+  automatically delete multiplayer saves.
 - Remove the project's hard-coded post-build copy into a Steam installation.
-  The build is labeled `1.0.2.47` to distinguish the experimental DLL from
+  The new candidate is labeled `1.0.2.48` (earlier survival-only test: 1.0.2.47)
+  to distinguish experimental DLLs from
   the official 1.0.2; the maintainer can choose the eventual release version.
 
 ## Reproduction and validation
@@ -36,12 +44,15 @@ port of every feature. The Mono build was not tested or retargeted.
   are **not** part of this proposal.
 - In a user's game test of the experimental IL2CPP DLL, the hunger, thirst
   and cold/temperature indicators and survival mechanics worked. This is
-  user-reported gameplay validation, **not** a full regression test.
+  user-reported gameplay validation **of 1.0.2.47**, not a full regression test.
+- The 1.0.2.48 candidate builds, and `SaveFolderGuard` tests pass with fake
+  saves in a separate temporary sandbox. It has **not** been tested in-game.
 
-## Known blocker: permadeath is not fixed
+## Known blocker: permadeath candidate needs an in-game test
 
-After player death, the game remains on the death message: the player does
-not respawn, and the save **is not deleted**. The observed log reports:
+In the 1.0.2.47 test, the player did not respawn during the session, but the
+save **was not deleted**: after leaving, the user could load it again. The
+observed log reports:
 
 ```text
 [ERROR] [Flatline] Unhandled exception in coroutine. It will not continue executing.
@@ -49,15 +60,15 @@ System.NullReferenceException: Object reference not set to an instance of an obj
    at Flatline.FlatlineUIModule.GenerateDeathScreenScore()+MoveNext()
 ```
 
-The 0.4.7 death UI and save-deletion path need a separate investigation.
-As a starting point, `InitiateDeathScreen()` expects a `Title` child with a
-`TextMeshProUGUI` component and creates the scoreboard. Confirm those objects
-exist in 0.4.7 before the score coroutine dereferences them; the log does not
-identify which particular reference is null.
-Do not advertise this as a fully compatible release. Back up saves and check
-that `PermanentDeath = false` in `UserData/MelonPreferences.cfg` before trying
-the experimental build (especially if an existing profile had it enabled). Test
-sleep, saving/reloading, the death UI, multiplayer and clothing items separately.
+The 1.0.2.48 changes address the likely null references and the old deletion
+coroutine's unreliable wait for `IsLoading == true`, but **compile tests cannot
+prove that the death screen, menu transition or Steam Cloud save deletion work**.
+Do not advertise it as fully compatible. Back up saves and keep
+`PermanentDeath = false` in `UserData/MelonPreferences.cfg` on existing profiles.
+For an actual deletion test, create a disposable *solo* save, confirm its
+backup, enable `PermanentDeath = true`, die, and verify that only that slot
+disappears both in-game and after restarting Steam. Test sleep, save/reload,
+death UI, multiplayer and clothing items separately.
 
 ## Rebuild
 
@@ -67,3 +78,8 @@ MelonLoader IL2CPP support module; `Il2CppInterop.Runtime.dll` and
 `Newtonsoft.Json.dll` can be taken from MelonLoader's `net6` directory. Then
 run `dotnet build IL2Cpp/Flatline-IL2Cpp.csproj -c Release`. Keep these local
 dependencies and the compiled DLL out of source control.
+
+To run non-destructive path-validation tests, set `FLATLINE_TEST_TEMP_ROOT`
+to a dedicated writable temporary directory and run
+`dotnet run --project Tests/SaveFolderGuard.Tests.csproj -c Release`. The tests
+create and remove only their own uniquely named sandbox there.

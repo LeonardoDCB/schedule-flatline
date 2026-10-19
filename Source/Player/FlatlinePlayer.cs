@@ -307,6 +307,10 @@ namespace Flatline
 
             Player.Local.Health.SendDie();
             coros.Add(MelonCoroutines.Start(GenerateDeathScreenScore()));
+#if IL2CPP
+            if (currentConfig.PermanentDeath && Player.PlayerList.Count == 1)
+                MelonCoroutines.Start(FinishPermanentDeathAfterDelay());
+#endif
 
             // For when multiplayer perma ddeath is disabled then its just respawn script and remove the custom ragdoll + reset states
             if (Player.PlayerList.Count > 1 && !currentConfig.PermanentDeath)

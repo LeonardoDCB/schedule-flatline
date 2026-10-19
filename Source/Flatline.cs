@@ -58,7 +58,7 @@ namespace Flatline
         public const string Description = "";
         public const string Author = "XOWithSauce";
         public const string Company = null;
-        public const string Version = "1.0.2.47";
+        public const string Version = "1.0.2.48";
         public const string DownloadLink = "https://github.com/XOWithSauce/schedule-flatline";
     }
 
@@ -536,14 +536,17 @@ namespace Flatline
                 // if the permanent death is not enabled->  disable the custom button
                 if (!currentConfig.PermanentDeath)
                 {
-                    CustomButton.gameObject.SetActive(false);
+                    if (CustomButton != null)
+                        CustomButton.gameObject.SetActive(false);
                 }
                 // Else perma death enabled ->  disable the respawn/load buttons
                 else if (currentConfig.PermanentDeath)
                 {
-                    if (__instance.respawnButton.gameObject.activeSelf)
+                    if (CustomButton != null)
+                        CustomButton.gameObject.SetActive(true);
+                    if (__instance.respawnButton != null && __instance.respawnButton.gameObject.activeSelf)
                         __instance.respawnButton.gameObject.SetActive(false);
-                    if (__instance.loadSaveButton.gameObject.activeSelf)
+                    if (__instance.loadSaveButton != null && __instance.loadSaveButton.gameObject.activeSelf)
                         __instance.loadSaveButton.gameObject.SetActive(false);
                 }
                 return;
